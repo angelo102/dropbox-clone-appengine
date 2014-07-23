@@ -1,0 +1,14 @@
+application: your-app-id
+version: v1
+runtime: python27
+api_version: 1
+threadsafe: yes
+
+env_variables:
+
+handlers:
+- url: /blobstore.*
+  script: blobstore.app
+
+- url: /.*
+  script: main.app

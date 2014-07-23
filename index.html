@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+{% autoescape true %}
+<html>
+<head>
+  <link rel="stylesheet" href="/bootstrap/css/bootstrap.css">
+</head>
+<body>
+  <h1>Dropbox Clone in App Engine</h1>
+  <pre>Logged User: {{ user_name }}</pre>
+  <form action="/share" method="post"> 
+    <div class="row">
+      <div class="col-md-4">
+        <b> My Files </b> </br>
+        <select name="filelist" multiple class="form-control" size="5" >
+          {% for file in files %}
+          <option>{{ file.filename }}</option>
+          {% endfor %}
+        </select> 
+      </br> </br>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-4">
+      <b> Users </b> 
+      <select class="form-control" name="userlist" multiple="True" size="5" >
+        {% for user in users %}
+        <option>{{ user.email }}</option>
+        {% endfor %}
+      </select> 
+    </div>
+  </div>
+</br> </br>
+<div class="row">
+  <div class="col-md-3">
+    <b>Notification Type</b> 
+    <div class="radio">
+      <label>
+        <input type="radio" name="notification" value="email">
+        Email Notification</br>
+      </label>
+      <label>
+        <input type="radio" name="notification" value="sms">
+        SMS Notification</br>
+      </label>
+      <label>
+        <input type="radio" name="notification" value="both">
+        Both</br>
+      </label>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-3">
+    <input class="btn btn-primary" type="submit" value="Share">
+  </div>
+</div>
+</form>
+</br>
+
+<form action="/download" method="get"> 
+    <div class="row">
+      <div class="col-md-4">
+        <b> My Shared Files </b> </br>
+        <select name="sharedfilelist" multiple class="form-control" size="5" >
+          {% for file in shared_files %}
+            <option>{{ file.file_name }}</option>
+          {% endfor %}
+        </select> 
+      </br>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-3">
+      <input class="btn btn-primary" type="submit" value="Download">
+    </div>
+  </div>
+</form>
+</br>
+<a href="{{ url|safe }}">{{ url_linktext }}</a>
+<!-- <p><a href="/test">test user and files</a></p> --> 
+</body>
+</html>
+{% endautoescape %}

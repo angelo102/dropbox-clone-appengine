@@ -1,0 +1,148 @@
+import os
+import urllib
+
+from google.appengine.api import users
+from google.appengine.ext import ndb
+
+import jinja2
+import webapp2
+
+from google.appengine.api import app_identity
+import cloudstorage as gcs
+#from google.appengine.api import files
+from google.appengine.api import mail
+
+JINJA_ENVIRONMENT = jinja2.Environment(
+    loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
+    extensions=['jinja2.ext.autoescape'],
+    autoescape=True)
+
+DEFAULT_GUESTBOOK_NAME = 'default_guestbook'
+'''
+def guestbook_key(guestbook_name=DEFAULT_GUESTBOOK_NAME):
+	return ndb.Key('Guestbook',guestbook_name)
+
+class Greeting(ndb.Model):
+	author = ndb.UserProperty()
+	content = ndb.StringProperty(indexed=False)
+	date = ndb.DateTimeProperty(auto_now_add=True)
+'''
+#Data Model
+class User(ndb.Model):
+  usr_id = ndb.StringProperty()
+  email = ndb.StringProperty()
+  phone = ndb.StringProperty()
+
+class ShareFiles(ndb.Model):
+  file_name = ndb.StringProperty()
+  owner = ndb.UserProperty()
+  recipients = ndb.StructuredProperty(User, repeated=True)
+  
+
+
+class MainPage(webapp2.RequestHandler):
+  def get(self):
+    '''
+    guestbook_name = self.request.get('guestbook_name', DEFAULT_GUESTBOOK_NAME)
+    
+    greetings_query = Greeting.query(ancestor=guestbook_key(guestbook_name)).order(-Greeting.date)
+    greetings = greetings_query.fetch(10)
+    '''
+    usr = users.get_current_user()
+    if usr:
+      url = users.create_logout_url(self.request.uri)
+      url_linktext = 'Logout'
+    else:
+      url = users.create_login_url(self.request.uri)
+      url_linktext = 'Login'
+      self.redirect(users.create_login_url(self.request.uri))
+
+    #testing users deb model
+    userlist = User.query().fetch(5)
+    
+    
+    print 'uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu'
+    print userlist[0].email
+    #test selected file
+    #ff=self.request.get('selected_file','')
+    #print "backkkkkkkkkkkkkkkkkkkkkkkkkkk"
+    #print  ff
+    #get files from bucket for the user
+    bucket_name = "/"+os.environ.get('BUCKET_NAME',app_identity.get_default_gcs_bucket_name())+"/"+str(usr)
+    #print "bucket!!!!!!!!!!!!!!!!!!"
+    #print bucket_name
+    #add a file
+    newf = gcs.open(bucket_name+"/testfile3.txt", 'w')
+    newf.close()
+    l_files=gcs.listbucket(bucket_name)
+    
+    template_values = {
+      #'greetings': greetings,
+      #'guestbook_name': urllib.quote_plus(guestbook_name),
+      'url': url,
+      'url_linktext': url_linktext,
+      'user_name': usr,
+      'files': l_files,
+      'users': userlist,
+    }
+
+    template = JINJA_ENVIRONMENT.get_template('index.html')
+    self.response.write(template.render(template_values))
+
+class ShFiles(webapp2.RequestHandler):
+  def post(self):
+    print "file to share!!!!!!!!!!!!!!!!!!!"
+    file_to_share = self.request.get('filelist')
+    print file_to_share
+
+    print "user to share!!!!!!!!!!!!!!!!"
+    users_to_share = self.request.get('userlist')
+    us = User.query(User.usr_id==users_to_share).fetch(1)
+    print users_to_share
+    print us[0].phone
+    #create users
+    '''
+    user = User(usr_id="angelo102",email="angelo102@gmail.com",phone="6822084557")
+    user.put()
+    user = User(usr_id="user2",email="angelo102@gmail.com",phone="6822084557")
+    user.put()
+    user = User(usr_id="user3",email="angelo102@gmail.com",phone="6822084557")
+    user.put()
+    user = User(usr_id="user4",email="angelo102@gmail.com",phone="6822084557")
+    user.put()
+    user = User(usr_id="user5",email="angelo102@gmail.com",phone="6822084557")
+    user.put()
+    '''
+
+    print "aquiiiiiiiiiiiiii"
+    #MAIL
+    
+    sender_address = "angelo102@gmail.com"
+    subject = "TEST SHARE MAIL"
+    body = "SHARE FILE MAIL"
+    mail.send_mail(sender_address, us[0].email, subject, body)
+
+    query_params = {'selected_file' : file_to_share }
+    self.redirect('/?'+urllib.urlencode(query_params))
+
+'''    
+class Guestbook(webapp2.RequestHandler):
+    def post(self):
+        guestbook_name = self.request.get('guestbook_name',DEFAULT_GUESTBOOK_NAME)
+        greeting = Greeting(parent=guestbook_key(guestbook_name))
+
+        if users.get_current_user():
+            greeting.author = users.get_current_user()
+
+        greeting.content = self.request.get('content')
+        greeting.put()
+
+        query_params = {'guestbook_name' : guestbook_name}
+        self.redirect('/?' + urllib.urlencode(query_params))
+'''
+
+application = webapp2.WSGIApplication([
+    ('/', MainPage),
+    #('/sign', Guestbook),
+    ('/share', ShFiles),
+], debug=True)
